@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: Install libtsk
+        run: sudo apt-get update && sudo apt-get install -y sleuthkit libtsk-dev dosfstools ntfs-3g util-linux pkg-config
+      - name: Test with TSK
+        run: cargo test -p macb-timeline --features tsk
+      - name: Clippy
+        run: cargo clippy -p macb-timeline --features tsk -- -D warnings
+      - name: Release build
+        run: cargo build --release -p macb-timeline --features tsk
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Test
+        run: cargo test -p macb-timeline
+      - name: Release build
+        run: cargo build --release -p macb-timeline

@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install libtsk
+        run: sudo apt-get update && sudo apt-get install -y sleuthkit libtsk-dev pkg-config
+      - name: Build release binary
+        run: cargo build --release -p macb-timeline --features tsk
+      - name: Upload Linux binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: macb-timeline-linux-x86_64
+          path: target/release/macb-timeline
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build release binary
+        run: cargo build --release -p macb-timeline
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: macb-timeline-windows-x86_64
+          path: target/release/macb-timeline.exe
+
+  release:
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/macb-timeline-linux-x86_64/macb-timeline
+            artifacts/macb-timeline-windows-x86_64/macb-timeline.exe
+          generate_release_notes: true

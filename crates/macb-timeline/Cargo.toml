@@ -1,0 +1,45 @@
+[package]
+name = "macb-timeline"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "MACB timestamp timeline forensic scanner for Linux"
+readme = "../../README.md"
+keywords = ["forensics", "timeline", "macb", "sleuthkit", "linux"]
+categories = ["command-line-utilities"]
+
+[lib]
+name = "macb_timeline"
+path = "src/lib.rs"
+
+[[bin]]
+name = "macb-timeline"
+path = "src/main.rs"
+
+[features]
+default = []
+tsk = ["dep:pkg-config"]
+
+[dependencies]
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tabled = { version = "0.17", features = ["derive"] }
+thiserror = "2"
+walkdir = "2"
+rayon = "1"
+glob = "0.3"
+md-5 = "0.10"
+sha2 = "0.10"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix = { version = "0.38", features = ["fs"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[build-dependencies]
+pkg-config = { version = "0.3", optional = true }
