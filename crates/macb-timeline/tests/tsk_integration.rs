@@ -19,22 +19,22 @@ use common::{
 };
 
 #[test]
-fn scans_fat_image_at_offset_zero() {
+fn scans_fat_image_at_partition_offset() {
     if !require_fat_tools() {
         return;
     }
 
     let dir = tempdir().expect("tempdir");
     let image_path = dir.path().join("test-fat.img");
-    create_fat_image(&image_path).expect("fat image");
+    let offset = create_fat_image(&image_path).expect("fat image");
 
     let scanner =
-        TskScanner::new(image_path, None, Some(0), ScanOptions::default()).expect("scanner");
+        TskScanner::new(image_path, None, Some(offset), ScanOptions::default()).expect("scanner");
     let records = scanner.scan(Path::new("/")).expect("scan");
 
     assert!(
         !records.is_empty(),
-        "expected at least the root directory in FAT image"
+        "expected at least one entry in FAT image"
     );
 }
 
@@ -54,7 +54,7 @@ fn auto_detects_fat_image_offset() {
 
     assert!(
         !records.is_empty(),
-        "expected auto-detected FAT filesystem at offset 0"
+        "expected auto-detected FAT filesystem inside MBR partition"
     );
 }
 
@@ -170,15 +170,15 @@ fn tsk_scan_honors_max_depth_filter() {
 
     let dir = tempdir().expect("tempdir");
     let image_path = dir.path().join("fat-depth.img");
-    create_fat_image(&image_path).expect("fat image");
+    let offset = create_fat_image(&image_path).expect("fat image");
 
     let shallow = ScanOptions::from_patterns(Some(0), &[], &[], true).expect("options");
     let scanner =
-        TskScanner::new(image_path.clone(), None, Some(0), shallow).expect("scanner");
+        TskScanner::new(image_path.clone(), None, Some(offset), shallow).expect("scanner");
     let shallow_records = scanner.scan(Path::new("/")).expect("scan");
 
     let deep = ScanOptions::from_patterns(None, &[], &[], true).expect("options");
-    let scanner = TskScanner::new(image_path, None, Some(0), deep).expect("scanner");
+    let scanner = TskScanner::new(image_path, None, Some(offset), deep).expect("scanner");
     let deep_records = scanner.scan(Path::new("/")).expect("scan");
 
     assert!(

@@ -4,6 +4,9 @@ use std::io;
 use std::path::Path;
 use std::process::Command;
 
+const PARTITION_START_SECTOR: u64 = 2048;
+const SECTOR_SIZE: u64 = 512;
+
 pub fn command_available(command: &str) -> bool {
     Command::new("sh")
         .arg("-c")
@@ -14,14 +17,6 @@ pub fn command_available(command: &str) -> bool {
 }
 
 pub fn require_fat_tools() -> bool {
-    if command_available("dd") && command_available("mkfs.vfat") && command_available("mcopy") {
-        return true;
-    }
-    eprintln!("skipping TSK test: dd/mkfs.vfat/mcopy unavailable");
-    false
-}
-
-pub fn require_partition_tools() -> bool {
     if command_available("dd")
         && command_available("parted")
         && command_available("mkfs.vfat")
@@ -33,6 +28,10 @@ pub fn require_partition_tools() -> bool {
     false
 }
 
+pub fn require_partition_tools() -> bool {
+    require_fat_tools()
+}
+
 pub fn require_ntfs_tools() -> bool {
     if command_available("dd") && command_available("mkfs.ntfs") {
         return true;
@@ -41,43 +40,26 @@ pub fn require_ntfs_tools() -> bool {
     false
 }
 
-pub fn create_fat_image(path: &Path) -> io::Result<()> {
-    let image = path.to_string_lossy();
-    run_success(
-        Command::new("dd").args([
-            "if=/dev/zero",
-            &format!("of={image}"),
-            "bs=1M",
-            "count=4",
-        ]),
-        "dd",
-    )?;
-    run_success(
-        Command::new("mkfs.vfat").args([
-            "-F",
-            "32",
-            "-n",
-            "TESTVOL",
-            path.to_str().expect("utf-8 path"),
-        ]),
-        "mkfs.vfat",
-    )?;
-    seed_fat_image(path, None)
+/// Small MBR disk with one FAT32 partition. Returns the partition byte offset.
+pub fn create_fat_image(path: &Path) -> io::Result<u64> {
+    create_partitioned_fat_image(path, 4, "4MiB")
 }
 
 /// MBR disk image with one FAT32 partition. Returns the partition byte offset.
 pub fn create_mbr_fat_partitioned_image(path: &Path) -> io::Result<u64> {
-    const PARTITION_START_SECTOR: u64 = 2048;
-    const SECTOR_SIZE: u64 = 512;
-    let byte_offset = PARTITION_START_SECTOR * SECTOR_SIZE;
+    create_partitioned_fat_image(path, 32, "16MiB")
+}
 
+fn create_partitioned_fat_image(path: &Path, size_mb: u64, part_end: &str) -> io::Result<u64> {
+    let byte_offset = PARTITION_START_SECTOR * SECTOR_SIZE;
     let image = path.to_string_lossy();
+
     run_success(
         Command::new("dd").args([
             "if=/dev/zero",
             &format!("of={image}"),
             "bs=1M",
-            "count=32",
+            &format!("count={size_mb}"),
         ]),
         "dd",
     )?;
@@ -92,7 +74,7 @@ pub fn create_mbr_fat_partitioned_image(path: &Path) -> io::Result<u64> {
             "primary",
             "fat32",
             "2048s",
-            "16MiB",
+            part_end,
         ]),
         "parted",
     )?;
@@ -110,7 +92,7 @@ pub fn create_mbr_fat_partitioned_image(path: &Path) -> io::Result<u64> {
         "mkfs.vfat",
     )?;
 
-    seed_fat_image(path, Some(1))?;
+    seed_fat_image(path, byte_offset)?;
 
     Ok(byte_offset)
 }
@@ -139,15 +121,11 @@ pub fn create_ntfs_image(path: &Path) -> io::Result<()> {
     Ok(())
 }
 
-fn seed_fat_image(path: &Path, partition: Option<u8>) -> io::Result<()> {
+fn seed_fat_image(path: &Path, byte_offset: u64) -> io::Result<()> {
     let sample = path.with_extension("seed.txt");
     std::fs::write(&sample, b"sample")?;
 
-    let image_target = match partition {
-        Some(num) => format!("{}@{num}", path.display()),
-        None => path.display().to_string(),
-    };
-
+    let image_target = format!("{}@@{byte_offset}", path.display());
     let output = Command::new("mcopy")
         .args([
             "-i",
