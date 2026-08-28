@@ -40,9 +40,9 @@ pub fn list_partitions(image: *mut TskImgInfo) -> Result<Vec<PartitionInfo>> {
     let walk_result = unsafe {
         ffi::tsk_vs_part_walk(
             vs,
+            0,
+            0,
             TSK_VS_PART_FLAG_ALL,
-            0,
-            0,
             vs_part_collect_callback,
             &mut collector as *mut PartitionCollector as *mut c_void,
         )
