@@ -7,7 +7,8 @@ use std::path::Path;
 use anyhow::{Result, bail};
 
 use super::ffi::{
-    self, TskImgInfo, TskVsPartInfo, TSK_VS_PART_FLAG_ALLOC, TSK_VS_TYPE_DETECT,
+    self, TskImgInfo, TskVsPartInfo, TSK_VS_PART_FLAG_ALL, TSK_VS_PART_FLAG_ALLOC,
+    TSK_VS_TYPE_DETECT,
 };
 use super::open_filesystem;
 
@@ -39,7 +40,7 @@ pub fn list_partitions(image: *mut TskImgInfo) -> Result<Vec<PartitionInfo>> {
     let walk_result = unsafe {
         ffi::tsk_vs_part_walk(
             vs,
-            0,
+            TSK_VS_PART_FLAG_ALL,
             0,
             0,
             vs_part_collect_callback,

@@ -5,6 +5,7 @@ use std::os::raw::c_long;
 
 pub const TSK_VS_TYPE_DETECT: u32 = 0;
 pub const TSK_VS_PART_FLAG_ALLOC: u8 = 0x01;
+pub const TSK_VS_PART_FLAG_ALL: u32 = 0x07;
 pub const TSK_FS_TYPE_DETECT: u32 = 0;
 pub const TSK_FS_TYPE_NTFS: u32 = 0x0000_0001;
 pub const TSK_FS_META_TYPE_REG: u32 = 1;
