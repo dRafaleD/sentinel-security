@@ -14,18 +14,22 @@ pub fn command_available(command: &str) -> bool {
 }
 
 pub fn require_fat_tools() -> bool {
-    if command_available("dd") && command_available("mkfs.vfat") {
+    if command_available("dd") && command_available("mkfs.vfat") && command_available("mcopy") {
         return true;
     }
-    eprintln!("skipping TSK test: dd/mkfs.vfat unavailable");
+    eprintln!("skipping TSK test: dd/mkfs.vfat/mcopy unavailable");
     false
 }
 
 pub fn require_partition_tools() -> bool {
-    if command_available("dd") && command_available("sfdisk") && command_available("mkfs.vfat") {
+    if command_available("dd")
+        && command_available("sfdisk")
+        && command_available("mkfs.vfat")
+        && command_available("mcopy")
+    {
         return true;
     }
-    eprintln!("skipping TSK test: dd/sfdisk/mkfs.vfat unavailable");
+    eprintln!("skipping TSK test: dd/sfdisk/mkfs.vfat/mcopy unavailable");
     false
 }
 
@@ -48,8 +52,11 @@ pub fn create_fat_image(path: &Path) -> io::Result<()> {
         ]),
         "dd",
     )?;
-    run_success(Command::new("mkfs.vfat").arg(path), "mkfs.vfat")?;
-    Ok(())
+    run_success(
+        Command::new("mkfs.vfat").args(["-F", "32", "-n", "TESTVOL", path.to_str().expect("utf-8 path")]),
+        "mkfs.vfat",
+    )?;
+    seed_fat_image(path, None)
 }
 
 /// MBR disk image with one FAT32 partition. Returns the partition byte offset.
@@ -77,7 +84,8 @@ pub fn create_mbr_fat_partitioned_image(path: &Path) -> io::Result<u64> {
 
     use std::io::Write;
     let mut stdin = sfdisk.stdin.take().expect("sfdisk stdin");
-    stdin.write_all(b"label: dos\n,start,16M,type=c\n")?;
+    // util-linux sfdisk script format (no legacy "start" keyword)
+    stdin.write_all(b"label: dos\n,16M,,c\n")?;
     drop(stdin);
 
     let output = sfdisk.wait_with_output()?;
@@ -96,10 +104,12 @@ pub fn create_mbr_fat_partitioned_image(path: &Path) -> io::Result<u64> {
             "TESTPART",
             "--offset",
             &PARTITION_START_SECTOR.to_string(),
-            &path.to_string_lossy(),
+            path.to_str().expect("utf-8 path"),
         ]),
         "mkfs.vfat",
     )?;
+
+    seed_fat_image(path, Some(1))?;
 
     Ok(PARTITION_START_SECTOR * SECTOR_SIZE)
 }
@@ -126,6 +136,20 @@ pub fn create_ntfs_image(path: &Path) -> io::Result<()> {
         "mkfs.ntfs",
     )?;
     Ok(())
+}
+
+fn seed_fat_image(path: &Path, partition: Option<u8>) -> io::Result<()> {
+    let image = path.to_string_lossy();
+    let target = match partition {
+        Some(num) => format!("{image}@{num}"),
+        None => image.into_owned(),
+    };
+    run_success(
+        Command::new("sh").arg("-c").arg(format!(
+            "printf 'sample' | mcopy -i '{target}' - ::sample.txt"
+        )),
+        "mcopy",
+    )
 }
 
 fn run_success(command: &mut Command, name: &str) -> io::Result<()> {
