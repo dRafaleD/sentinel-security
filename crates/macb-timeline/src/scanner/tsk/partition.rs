@@ -37,21 +37,28 @@ pub fn list_partitions(image: *mut TskImgInfo) -> Result<Vec<PartitionInfo>> {
         allocated_slot: 0,
     };
 
-    let walk_result = unsafe {
-        ffi::tsk_vs_part_walk(
-            vs,
-            0,
-            0,
-            TSK_VS_PART_FLAG_ALL,
-            vs_part_collect_callback,
-            &mut collector as *mut PartitionCollector as *mut c_void,
-        )
-    };
+    // Walk one address at a time. libtsk exposes no stable public partition
+    // count accessor, and its internal struct layout varies by version.
+    for address in 0..u32::MAX {
+        let walk_result = unsafe {
+            ffi::tsk_vs_part_walk(
+                vs,
+                address,
+                address,
+                TSK_VS_PART_FLAG_ALL,
+                vs_part_collect_callback,
+                &mut collector as *mut PartitionCollector as *mut c_void,
+            )
+        };
+        if walk_result != 0 {
+            break;
+        }
+    }
 
     unsafe { ffi::tsk_vs_close(vs) };
 
-    if walk_result != 0 {
-        bail!("failed to walk partition table: {}", ffi::last_tsk_error());
+    if collector.partitions.is_empty() {
+        bail!("partition table contains no entries");
     }
 
     Ok(collector.partitions)
