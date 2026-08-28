@@ -86,7 +86,8 @@ pub fn detect_filesystem_offset(image: *mut TskImgInfo) -> Result<u64> {
         return Ok(0);
     }
 
-    let partitions: Vec<PartitionInfo> = list_partitions(image)?
+    let partitions: Vec<PartitionInfo> = list_partitions(image)
+        .unwrap_or_default()
         .into_iter()
         .filter(|part| part.allocated)
         .collect();
