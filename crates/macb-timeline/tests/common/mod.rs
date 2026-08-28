@@ -14,14 +14,10 @@ pub fn command_available(command: &str) -> bool {
 }
 
 pub fn require_fat_tools() -> bool {
-    if command_available("dd")
-        && command_available("mkfs.vfat")
-        && command_available("mount")
-        && command_available("umount")
-    {
+    if command_available("dd") && command_available("mkfs.vfat") && command_available("mcopy") {
         return true;
     }
-    eprintln!("skipping TSK test: dd/mkfs.vfat/mount/umount unavailable");
+    eprintln!("skipping TSK test: dd/mkfs.vfat/mcopy unavailable");
     false
 }
 
@@ -29,12 +25,11 @@ pub fn require_partition_tools() -> bool {
     if command_available("dd")
         && command_available("parted")
         && command_available("mkfs.vfat")
-        && command_available("mount")
-        && command_available("umount")
+        && command_available("mcopy")
     {
         return true;
     }
-    eprintln!("skipping TSK test: dd/parted/mkfs.vfat/mount/umount unavailable");
+    eprintln!("skipping TSK test: dd/parted/mkfs.vfat/mcopy unavailable");
     false
 }
 
@@ -115,7 +110,7 @@ pub fn create_mbr_fat_partitioned_image(path: &Path) -> io::Result<u64> {
         "mkfs.vfat",
     )?;
 
-    seed_fat_image(path, Some(byte_offset))?;
+    seed_fat_image(path, Some(1))?;
 
     Ok(byte_offset)
 }
@@ -144,43 +139,34 @@ pub fn create_ntfs_image(path: &Path) -> io::Result<()> {
     Ok(())
 }
 
-fn seed_fat_image(path: &Path, byte_offset: Option<u64>) -> io::Result<()> {
-    let mount = std::env::temp_dir().join(format!("macb-fat-{}", std::process::id()));
-    let mount_str = mount.to_string_lossy();
-    let image_str = path.to_string_lossy();
+fn seed_fat_image(path: &Path, partition: Option<u8>) -> io::Result<()> {
+    let sample = path.with_extension("seed.txt");
+    std::fs::write(&sample, b"sample")?;
 
-    run_success(
-        Command::new("sudo").args(["mkdir", "-p", &mount_str]),
-        "mkdir mountpoint",
-    )?;
-
-    let loop_opts = match byte_offset {
-        Some(offset) => format!("loop,offset={offset},rw"),
-        None => "loop,rw".to_string(),
+    let image_target = match partition {
+        Some(num) => format!("{}@{num}", path.display()),
+        None => path.display().to_string(),
     };
 
-    let mount_result = run_success(
-        Command::new("sudo").args([
-            "mount",
-            "-o",
-            &loop_opts,
-            &image_str,
-            &mount_str,
-        ]),
-        "mount",
-    );
+    let output = Command::new("mcopy")
+        .args([
+            "-i",
+            &image_target,
+            sample.to_str().expect("utf-8 seed path"),
+            "::sample.txt",
+        ])
+        .output()?;
 
-    if mount_result.is_err() {
-        let _ = Command::new("sudo").args(["rmdir", &mount_str]).status();
-        return mount_result;
+    let _ = std::fs::remove_file(&sample);
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        Err(io::Error::other(format!(
+            "mcopy failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )))
     }
-
-    let write_result = std::fs::write(mount.join("sample.txt"), b"sample");
-    let _ = Command::new("sudo").args(["umount", &mount_str]).status();
-    let _ = Command::new("sudo").args(["rmdir", &mount_str]).status();
-    write_result.map_err(io::Error::other)?;
-
-    Ok(())
 }
 
 fn run_success(command: &mut Command, name: &str) -> io::Result<()> {

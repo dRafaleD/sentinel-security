@@ -17,7 +17,7 @@ jobs:
         with:
           components: clippy
       - name: Install libtsk
-        run: sudo apt-get update && sudo apt-get install -y sleuthkit libtsk-dev dosfstools ntfs-3g util-linux pkg-config
+        run: sudo apt-get update && sudo apt-get install -y sleuthkit libtsk-dev dosfstools ntfs-3g util-linux pkg-config mtools
       - name: Test with TSK
         run: cargo test -p macb-timeline --features tsk
       - name: Clippy
