@@ -117,15 +117,6 @@ pub unsafe fn tsk_vs_get_block_size(vs: *const TskVsInfo) -> u32 {
 }
 
 #[inline]
-pub unsafe fn tsk_vs_get_part_count(vs: *const TskVsInfo) -> u32 {
-    if vs.is_null() {
-        0
-    } else {
-        read_field(vs as *const u8, 48)
-    }
-}
-
-#[inline]
 pub unsafe fn tsk_fs_get_root_inum(fs: *const TskFsInfo) -> u64 {
     if fs.is_null() {
         0
