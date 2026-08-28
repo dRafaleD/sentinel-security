@@ -58,7 +58,7 @@ extern "C" {
     ) -> *mut TskImgInfo;
     pub fn tsk_img_close(img: *mut TskImgInfo);
 
-    pub fn tsk_vs_open(img: *mut TskImgInfo, type_: u32) -> *mut TskVsInfo;
+    pub fn tsk_vs_open(img: *mut TskImgInfo, offset: u64, type_: u32) -> *mut TskVsInfo;
     pub fn tsk_vs_close(vs: *mut TskVsInfo);
     pub fn tsk_vs_part_walk(
         vs: *mut TskVsInfo,

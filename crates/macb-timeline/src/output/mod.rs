@@ -42,12 +42,10 @@ pub fn write_timeline(
         crate::model::OutputFormat::Table => write_timeline_table(writer, events, min_severity),
         crate::model::OutputFormat::Json => write_timeline_json(writer, events, min_severity),
         crate::model::OutputFormat::Csv => write_timeline_csv(writer, events, min_severity),
-        crate::model::OutputFormat::Bodyfile => {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "bodyfile output is only supported for the scan command",
-            ));
-        }
+        crate::model::OutputFormat::Bodyfile => Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "bodyfile output is only supported for the scan command",
+        )),
     }
 }
 

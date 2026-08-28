@@ -22,7 +22,7 @@ pub struct PartitionInfo {
 }
 
 pub fn list_partitions(image: *mut TskImgInfo) -> Result<Vec<PartitionInfo>> {
-    let vs = unsafe { ffi::tsk_vs_open(image, TSK_VS_TYPE_DETECT) };
+    let vs = unsafe { ffi::tsk_vs_open(image, 0, TSK_VS_TYPE_DETECT) };
     if vs.is_null() {
         bail!(
             "no partition table found in image: {}",

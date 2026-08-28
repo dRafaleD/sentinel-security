@@ -42,7 +42,7 @@ pub fn require_ntfs_tools() -> bool {
 
 /// Small MBR disk with one FAT32 partition. Returns the partition byte offset.
 pub fn create_fat_image(path: &Path) -> io::Result<u64> {
-    create_partitioned_fat_image(path, 4, "4MiB")
+    create_partitioned_fat_image(path, 32, "16MiB")
 }
 
 /// MBR disk image with one FAT32 partition. Returns the partition byte offset.
