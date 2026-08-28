@@ -63,8 +63,8 @@ extern "C" {
     pub fn tsk_vs_close(vs: *mut TskVsInfo);
     pub fn tsk_vs_part_walk(
         vs: *mut TskVsInfo,
-        start: u64,
-        last: u64,
+        start: u32,
+        last: u32,
         flags: u32,
         action: VsPartWalkCallback,
         ptr: *mut c_void,
@@ -113,6 +113,15 @@ pub unsafe fn tsk_vs_get_block_size(vs: *const TskVsInfo) -> u32 {
         0
     } else {
         read_field(vs as *const u8, 32)
+    }
+}
+
+#[inline]
+pub unsafe fn tsk_vs_get_part_count(vs: *const TskVsInfo) -> u32 {
+    if vs.is_null() {
+        0
+    } else {
+        read_field(vs as *const u8, 48)
     }
 }
 
