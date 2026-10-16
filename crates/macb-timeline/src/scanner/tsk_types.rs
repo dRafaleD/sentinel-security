@@ -4,6 +4,13 @@ use std::path::Path;
 
 use chrono::{DateTime, TimeZone, Utc};
 
+pub type MacbTimestamps = (
+    Option<DateTime<Utc>>,
+    Option<DateTime<Utc>>,
+    Option<DateTime<Utc>>,
+    Option<DateTime<Utc>>,
+);
+
 const TSK_IMG_TYPE_DETECT: u32 = 0;
 const TSK_IMG_TYPE_RAW: u32 = 0x0000_0001;
 const TSK_IMG_TYPE_AFF_AFF: u32 = 0x0000_0004;
@@ -39,15 +46,7 @@ pub fn detect_image_type(path: &Path) -> u32 {
     }
 }
 
-pub fn map_tsk_timestamps(
-    fs_type: u32,
-    times: &TskMetaTimes,
-) -> (
-    Option<DateTime<Utc>>,
-    Option<DateTime<Utc>>,
-    Option<DateTime<Utc>>,
-    Option<DateTime<Utc>>,
-) {
+pub fn map_tsk_timestamps(fs_type: u32, times: &TskMetaTimes) -> MacbTimestamps {
     let mtime = timestamp_from_unix(times.mtime);
     let atime = timestamp_from_unix(times.atime);
 

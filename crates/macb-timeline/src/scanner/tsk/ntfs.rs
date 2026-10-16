@@ -28,10 +28,7 @@ fn fn_times(meta: *const TskFsMeta) -> TskMetaTimes {
     }
 }
 
-pub fn detect_ntfs_attr_mismatch(
-    fs_type: u32,
-    meta: *const TskFsMeta,
-) -> Option<Anomaly> {
+pub fn detect_ntfs_attr_mismatch(fs_type: u32, meta: *const TskFsMeta) -> Option<Anomaly> {
     if fs_type != TSK_FS_TYPE_NTFS || meta.is_null() {
         return None;
     }
@@ -74,12 +71,7 @@ pub fn map_ntfs_times(
     fs_type: u32,
     meta: *const TskFsMeta,
     meta_times: &TskMetaTimes,
-) -> (
-    Option<chrono::DateTime<chrono::Utc>>,
-    Option<chrono::DateTime<chrono::Utc>>,
-    Option<chrono::DateTime<chrono::Utc>>,
-    Option<chrono::DateTime<chrono::Utc>>,
-) {
+) -> tsk_types::MacbTimestamps {
     if fs_type != TSK_FS_TYPE_NTFS || meta.is_null() {
         return tsk_types::map_tsk_timestamps(fs_type, meta_times);
     }

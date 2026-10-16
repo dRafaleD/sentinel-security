@@ -1,10 +1,12 @@
 #[cfg(test)]
-mod tests {
+mod serialization_tests {
     use std::io::Cursor;
 
     use chrono::{TimeZone, Utc};
 
-    use crate::model::{Anomaly, AnomalyRule, MacbRecord, MacbType, OutputFormat, Severity, TimelineEvent};
+    use crate::model::{
+        Anomaly, AnomalyRule, MacbRecord, MacbType, OutputFormat, Severity, TimelineEvent,
+    };
     use crate::output::{write_records, write_timeline};
 
     fn sample_record() -> MacbRecord {
@@ -53,7 +55,13 @@ mod tests {
         };
 
         let mut buffer = Cursor::new(Vec::new());
-        write_records(&mut buffer, &[record], OutputFormat::Bodyfile, Severity::Info).unwrap();
+        write_records(
+            &mut buffer,
+            &[record],
+            OutputFormat::Bodyfile,
+            Severity::Info,
+        )
+        .unwrap();
         let output = String::from_utf8(buffer.into_inner()).unwrap();
         assert!(output.starts_with("abc123|/tmp/example.txt|42|-/rw-r--r--|"));
     }
@@ -84,13 +92,7 @@ mod tests {
         };
 
         let mut buffer = Cursor::new(Vec::new());
-        write_timeline(
-            &mut buffer,
-            &[event],
-            OutputFormat::Csv,
-            Severity::Info,
-        )
-        .unwrap();
+        write_timeline(&mut buffer, &[event], OutputFormat::Csv, Severity::Info).unwrap();
 
         let output = String::from_utf8(buffer.into_inner()).unwrap();
         assert!(output.starts_with("timestamp,event_type,path,anomalies"));
